@@ -144,11 +144,19 @@ async function translateText(text: string, source: string, target: string, delay
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
   
   let attempt = 0;
-  const maxRetries = 3;
+  const maxRetries = 4;
   
   while (attempt < maxRetries) {
     try {
       const res = await fetch(url);
+      if (res.status === 429) {
+        // High rate limit hit — exponential wait extension
+        const wait = 4000 * Math.pow(2, attempt);
+        console.warn(`HTTP 429 Rate Limit Hit. Waiting ${wait}ms to retry...`);
+        await new Promise(resolve => setTimeout(resolve, wait));
+        attempt++;
+        continue;
+      }
       if (!res.ok) throw new Error(`HTTP status ${res.status}`);
       const data = await res.json();
       
@@ -160,7 +168,8 @@ async function translateText(text: string, source: string, target: string, delay
     } catch (e) {
       attempt++;
       if (attempt >= maxRetries) throw e;
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt) * 1000));
+      const wait = delay * Math.pow(2, attempt) * 1000;
+      await new Promise(resolve => setTimeout(resolve, wait));
     }
   }
   throw new Error("Failed to translate after retries");
@@ -189,7 +198,11 @@ export async function translateBatch(
   const combined = texts.map(t => t.text).join(DELIMITER);
   try {
     const res = await translateText(combined, source, target, delay);
-    const parts = res.split(/\[###\]|\[\s*###\s*\]/i).map(p => p.trim());
+    
+    // Improved robust delimiter matching
+    // Some translation engines replace " [###] " with " [ ### ] " or eat whitespace
+    const splitRegex = /\s*\[\s*###\s*\]\s*/gi;
+    const parts = res.split(splitRegex).map(p => p.trim());
     
     if (parts.length === texts.length) {
       for (let i = 0; i < texts.length; i++) {
@@ -197,10 +210,19 @@ export async function translateBatch(
       }
     } else {
       // Delimiter alignment failure fallback to block-by-block
+      console.warn(`Delimiter mismatch: expected ${texts.length} parts, got ${parts.length}. Falling back to block-by-block.`);
       for (const item of texts) {
-        const fallbackRes = await translateText(item.text, source, target, delay);
-        onProgress(item.index, fallbackRes.split('\n'));
-        await new Promise(resolve => setTimeout(resolve, delay * 1000));
+        try {
+          const fallbackRes = await translateText(item.text, source, target, delay);
+          onProgress(item.index, fallbackRes.split('\n'));
+          // Wait slightly to respect rate limits
+          if (texts.indexOf(item) < texts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, delay * 1000));
+          }
+        } catch {
+          // Keep original text as absolute fallback instead of losing it
+          onProgress(item.index, item.text.split('\n'));
+        }
       }
     }
   } catch (err) {

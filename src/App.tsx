@@ -16,8 +16,8 @@ export const App: React.FC = () => {
 
   const [sourceLang, setSourceLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('es');
-  const [chunkSize, setChunkSize] = useState(3500);
-  const [delay, setDelay] = useState(1.0);
+  const [chunkSize, setChunkSize] = useState(1500); // Safer batch size default to prevent delimiter mangling
+  const [delay, setDelay] = useState(1.5); // Better rate-limiting safety margin
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
