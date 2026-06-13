@@ -7,10 +7,12 @@ interface SettingsPanelProps {
   targetLang: string;
   chunkSize: number;
   delay: number;
+  concurrency: number;
   onChangeSource: (val: string) => void;
   onChangeTarget: (val: string) => void;
   onChangeChunkSize: (val: number) => void;
   onChangeDelay: (val: number) => void;
+  onChangeConcurrency: (val: number) => void;
   onSwap: () => void;
   disabled: boolean;
 }
@@ -53,10 +55,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   targetLang,
   chunkSize,
   delay,
+  concurrency,
   onChangeSource,
   onChangeTarget,
   onChangeChunkSize,
   onChangeDelay,
+  onChangeConcurrency,
   onSwap,
   disabled,
 }) => {
@@ -111,6 +115,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               display={`${delay.toFixed(1)}s`}
               onChange={onChangeDelay}
             />
+            <Slider
+              label="Concurrent threads"
+              hint={concurrency > 3 ? "Caution: More than 3 threads can trigger rate limits on large files." : "Run multiple chunk translates in parallel safely."}
+              value={concurrency}
+              min={1}
+              max={10}
+              step={1}
+              disabled={disabled}
+              display={`${concurrency} thread${concurrency > 1 ? 's' : ''}`}
+              onChange={onChangeConcurrency}
+              alert={concurrency > 3}
+            />
           </div>
         </details>
       </div>
@@ -127,12 +143,13 @@ const Slider: React.FC<{
   step: number;
   display: string;
   disabled: boolean;
+  alert?: boolean;
   onChange: (v: number) => void;
-}> = ({ label, hint, value, min, max, step, display, disabled, onChange }) => (
+}> = ({ label, hint, value, min, max, step, display, disabled, alert, onChange }) => (
   <div>
     <div className="mb-1.5 flex items-baseline justify-between">
       <label className="text-sm font-medium text-ink">{label}</label>
-      <span className="font-mono text-xs tabular-nums text-muted">{display}</span>
+      <span className={`font-mono text-xs tabular-nums font-semibold ${alert ? 'text-danger' : 'text-muted'}`}>{display}</span>
     </div>
     <input
       type="range"
@@ -142,8 +159,10 @@ const Slider: React.FC<{
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-2 accent-accent disabled:opacity-50"
+      className={`h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-2 disabled:opacity-50 ${
+        alert ? 'accent-danger' : 'accent-accent'
+      }`}
     />
-    <p className="mt-1.5 text-xs text-faint">{hint}</p>
+    <p className={`mt-1.5 text-xs ${alert ? 'text-danger/80' : 'text-faint'}`}>{hint}</p>
   </div>
 );

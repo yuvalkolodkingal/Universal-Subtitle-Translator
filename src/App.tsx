@@ -18,6 +18,7 @@ export const App: React.FC = () => {
   const [targetLang, setTargetLang] = useState('es');
   const [chunkSize, setChunkSize] = useState(1500); // Safer batch size default to prevent delimiter mangling
   const [delay, setDelay] = useState(1.5); // Better rate-limiting safety margin
+  const [concurrency, setConcurrency] = useState(2); // Number of concurrent batch threads (default 2)
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -90,36 +91,75 @@ export const App: React.FC = () => {
 
     addLog(`Split into ${chunks.length} ${chunks.length === 1 ? 'batch' : 'batches'}.`);
 
-    for (let i = 0; i < chunks.length; i++) {
-      if (abortRef.current) {
-        addLog('Paused.');
-        setIsTranslating(false);
-        return;
+    // Worker pool for parallel chunk processing
+    let activeWorkers = 0;
+    let chunkIndex = 0;
+    let hasFailed = false;
+
+    return new Promise<void>((resolve) => {
+      const next = async () => {
+        if (abortRef.current || hasFailed) {
+          if (activeWorkers === 0) {
+            setIsTranslating(false);
+            resolve();
+          }
+          return;
+        }
+
+        if (chunkIndex >= chunks.length) {
+          if (activeWorkers === 0) {
+            addLog('Done.');
+            setIsTranslating(false);
+            resolve();
+          }
+          return;
+        }
+
+        const currentIdx = chunkIndex++;
+        const chunk = chunks[currentIdx];
+        const startIdx = chunk[0].index;
+        const endIdx = chunk[chunk.length - 1].index;
+
+        activeWorkers++;
+        addLog(`[Worker] Starting batch ${currentIdx + 1}/${chunks.length} (blocks ${startIdx}–${endIdx})…`);
+
+        try {
+          await translateBatch(
+            chunk,
+            sourceLang,
+            targetLang,
+            delay,
+            (idx, lines) => setTranslatedBlocks((prev) => ({ ...prev, [idx]: lines })),
+            () => abortRef.current
+          );
+          
+          if (!abortRef.current) {
+            addLog(`[Worker] Finished batch ${currentIdx + 1}/${chunks.length}.`);
+          }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          addLog(`[Error] Batch ${currentIdx + 1} failed: ${msg}`);
+          hasFailed = true;
+        } finally {
+          activeWorkers--;
+          
+          // Cool down sleep delay if we have more chunks left
+          if (chunkIndex < chunks.length && !abortRef.current && !hasFailed) {
+            await new Promise((r) => setTimeout(r, delay * 1000));
+          }
+          
+          // Re-trigger pool recursion
+          next();
+        }
+      };
+
+      // Boot up the pool of parallel workers up to concurrency threshold limit
+      const limit = Math.min(concurrency, chunks.length);
+      addLog(`Spawning ${limit} parallel translation thread${limit > 1 ? 's' : ''}…`);
+      for (let i = 0; i < limit; i++) {
+        next();
       }
-      const chunk = chunks[i];
-      addLog(`Batch ${i + 1} of ${chunks.length} — blocks ${chunk[0].index}–${chunk[chunk.length - 1].index}.`);
-
-      try {
-        await translateBatch(
-          chunk,
-          sourceLang,
-          targetLang,
-          delay,
-          (idx, lines) => setTranslatedBlocks((prev) => ({ ...prev, [idx]: lines })),
-          () => abortRef.current
-        );
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        addLog(`Couldn’t reach the translation service (${msg}). Press Resume to retry.`);
-        setIsTranslating(false);
-        return;
-      }
-
-      if (i < chunks.length - 1) await new Promise((r) => setTimeout(r, delay * 1000));
-    }
-
-    addLog('Done.');
-    setIsTranslating(false);
+    });
   };
 
   const handlePause = () => {
@@ -183,10 +223,12 @@ export const App: React.FC = () => {
                 targetLang={targetLang}
                 chunkSize={chunkSize}
                 delay={delay}
+                concurrency={concurrency}
                 onChangeSource={setSourceLang}
                 onChangeTarget={setTargetLang}
                 onChangeChunkSize={setChunkSize}
                 onChangeDelay={setDelay}
+                onChangeConcurrency={setConcurrency}
                 onSwap={handleSwap}
                 disabled={isTranslating}
               />
