@@ -1,6 +1,6 @@
-# Universal Subtitle Translator (Web + CLI)
+# Universal Subtitle Translator
 
-An interactive, production-grade React web application and [OpenCode](https://opencode.ai) skill that translates `.srt` subtitle files between **any language pair** — English to Spanish, Japanese to French, Arabic to Hebrew, and everything in between.
+An interactive, production-grade React web application that translates `.srt` subtitle files in-browser between **any language pair** — English to Spanish, Japanese to French, Arabic to Hebrew, and everything in between.
 
 ## Live Demo & Web App
 
@@ -16,43 +16,27 @@ You can run this application entirely in your browser. Fully static, client-side
 
 ---
 
-## Direct CLI Usage
-
-You can also run the Python engine script directly.
-
-### CLI Installation
-
-```bash
-# 1. Set up a virtual environment
-python -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-# 2. Translate
-.venv/bin/python scripts/translate.py \
-  --input movie.srt \
-  --output movie_translated.srt \
-  --target spanish
-```
-
-### Options
-
-| Flag | Short | Description | Default |
-|---|---|---|---|
-| `--input` | `-i` | Input `.srt` file | required |
-| `--output` | `-o` | Output `.srt` file | required |
-| `--target` | `-t` | Target language name or code | required |
-| `--source` | `-s` | Source language name or code | `auto` |
-| `--progress` | `-p` | Path for the checkpoint file | next to output |
-
----
-
 ## How It Works
 
 Standard `.srt` files can have thousands of subtitle blocks. Translating them individually would be extremely slow and trigger rate limits almost immediately.
 
-Both the React and CLI engine bundle multiple blocks into a single translation request using a `[###]` delimiter, then split the response back into individual blocks. This reduces API calls by ~98% — a 1,500-block file goes from ~1,500 requests to ~30.
+The React engine bundles multiple blocks into a single translation request using a `[###]` delimiter, then splits the response back into individual blocks. This reduces API calls by ~98% — a 1,500-block file goes from ~1,500 requests to ~30.
 
 If the translation engine alters the delimiter and the response can't be cleanly split, the system automatically falls back to translating that batch block-by-block so nothing is lost.
+
+## Setup & Local Development
+
+To run this application locally on your computer:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run the development server
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
 
 ## License
 
