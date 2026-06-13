@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
+import { UploadCloud, AlertCircle } from 'lucide-react';
 
 interface DropZoneProps {
   onFileLoaded: (name: string, content: string) => void;
@@ -11,84 +11,86 @@ export const DropZone: React.FC<DropZoneProps> = ({ onFileLoaded }) => {
   const [error, setError] = useState<string | null>(null);
 
   const processFile = (file: File) => {
-    if (!file.name.endsWith('.srt')) {
-      setError('Unsupported file type. Please upload a .srt file.');
+    if (!file.name.toLowerCase().endsWith('.srt')) {
+      setError(`"${file.name}" isn't an .srt file. Choose a SubRip subtitle file to continue.`);
       return;
     }
     setError(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result;
-      if (typeof result === 'string') {
-        onFileLoaded(file.name, result);
-      }
+      if (typeof result === 'string') onFileLoaded(file.name, result);
     };
+    reader.onerror = () => setError('That file could not be read. Try selecting it again.');
     reader.readAsText(file, 'utf-8');
   };
 
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDrag = (e: React.DragEvent, active: boolean) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setIsDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setIsDragActive(false);
-    }
+    setIsDragActive(active);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
+    if (e.target.files?.[0]) processFile(e.target.files[0]);
   };
+
+  const openPicker = () => fileInputRef.current?.click();
 
   return (
     <div className="w-full">
       <div
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
+        role="button"
+        tabIndex={0}
+        aria-label="Upload a subtitle file"
+        onDragEnter={(e) => handleDrag(e, true)}
+        onDragOver={(e) => handleDrag(e, true)}
+        onDragLeave={(e) => handleDrag(e, false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-300 ${
+        onClick={openPicker}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPicker();
+          }
+        }}
+        className={`group flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed px-6 py-16 text-center transition-colors duration-200 ease-out-quart ${
           isDragActive
-            ? 'border-emerald-500 bg-emerald-950/10'
-            : 'border-slate-800 hover:border-slate-700 bg-slate-950/40'
+            ? 'border-accent bg-accent-soft/40'
+            : 'border-border-strong bg-surface hover:border-faint hover:bg-surface-2'
         }`}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".srt"
-          onChange={handleChange}
-          className="hidden"
-        />
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
-            <Upload className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-200 font-medium text-lg">
-              Drag & drop subtitle file here, or <span className="text-emerald-500 hover:underline">browse</span>
-            </p>
-            <p className="text-slate-500 text-sm mt-1">Accepts UTF-8 encoded .srt files</p>
-          </div>
+        <input ref={fileInputRef} type="file" accept=".srt" onChange={handleChange} className="hidden" />
+        <span
+          className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+            isDragActive ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-muted group-hover:text-ink'
+          }`}
+        >
+          <UploadCloud className="h-6 w-6" />
+        </span>
+        <div className="space-y-1">
+          <p className="text-base font-medium text-ink">
+            Drop a subtitle file, or{' '}
+            <span className="text-accent underline decoration-accent/40 underline-offset-2">browse</span>
+          </p>
+          <p className="text-sm text-muted">SubRip .srt files, UTF-8. Everything stays on your device.</p>
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 p-4 rounded bg-rose-950/30 border border-rose-900/50 flex items-center gap-3 text-rose-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
+        <div
+          role="alert"
+          className="mt-3 flex items-start gap-2.5 rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
     </div>

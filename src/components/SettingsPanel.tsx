@@ -1,6 +1,6 @@
 import React from 'react';
 import { SUPPORTED_LANGUAGES } from '../utils/translator';
-import { Settings } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown } from 'lucide-react';
 
 interface SettingsPanelProps {
   sourceLang: string;
@@ -11,8 +11,42 @@ interface SettingsPanelProps {
   onChangeTarget: (val: string) => void;
   onChangeChunkSize: (val: number) => void;
   onChangeDelay: (val: number) => void;
+  onSwap: () => void;
   disabled: boolean;
 }
+
+const Select: React.FC<{
+  id: string;
+  label: string;
+  value: string;
+  disabled: boolean;
+  onChange: (v: string) => void;
+  omitAuto?: boolean;
+}> = ({ id, label, value, disabled, onChange, omitAuto }) => (
+  <div className="flex-1">
+    <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-muted">
+      {label}
+    </label>
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none rounded-lg border border-border bg-surface py-2.5 pl-3.5 pr-9 text-sm text-ink transition-colors duration-150 hover:border-border-strong focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-55"
+      >
+        {Object.entries(SUPPORTED_LANGUAGES)
+          .filter(([code]) => !(omitAuto && code === 'auto'))
+          .map(([code, name]) => (
+            <option key={code} value={code}>
+              {name}
+            </option>
+          ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+    </div>
+  </div>
+);
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   sourceLang,
@@ -23,92 +57,93 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onChangeTarget,
   onChangeChunkSize,
   onChangeDelay,
-  disabled
+  onSwap,
+  disabled,
 }) => {
   return (
-    <div className="bg-slate-950/40 border border-slate-900 rounded-lg p-6 flex flex-col gap-6">
-      <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
-        <Settings className="w-5 h-5 text-emerald-500" />
-        <h2 className="text-slate-200 font-mono text-sm uppercase tracking-wider font-bold">Translation Engine Configuration</h2>
+    <section className="rounded-xl border border-border bg-surface shadow-panel">
+      <div className="border-b border-border px-5 py-4">
+        <h2 className="text-[15px] font-semibold text-ink">Languages</h2>
+        <p className="mt-0.5 text-sm text-muted">Pick what you have and what you want.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Source Language */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-mono uppercase tracking-wider text-slate-400">Source Language</label>
-          <select
-            value={sourceLang}
-            onChange={(e) => onChangeSource(e.target.value)}
-            disabled={disabled}
-            className="bg-slate-900 border border-slate-800 rounded px-4 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 disabled:opacity-50 font-sans"
+      <div className="px-5 py-5">
+        <div className="flex items-end gap-2">
+          <Select id="src" label="From" value={sourceLang} disabled={disabled} onChange={onChangeSource} />
+          <button
+            onClick={onSwap}
+            disabled={disabled || sourceLang === 'auto'}
+            title={sourceLang === 'auto' ? 'Set a source language to swap' : 'Swap languages'}
+            aria-label="Swap source and target languages"
+            className="mb-0.5 flex h-[42px] w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-muted transition-colors duration-150 hover:border-border-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
-              <option key={code} value={code}>
-                {name}
-              </option>
-            ))}
-          </select>
+            <ArrowLeftRight className="h-4 w-4" />
+          </button>
+          <Select id="tgt" label="To" value={targetLang} disabled={disabled} onChange={onChangeTarget} omitAuto />
         </div>
 
-        {/* Target Language */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-mono uppercase tracking-wider text-slate-400">Target Language</label>
-          <select
-            value={targetLang}
-            onChange={(e) => onChangeTarget(e.target.value)}
-            disabled={disabled}
-            className="bg-slate-900 border border-slate-800 rounded px-4 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 disabled:opacity-50 font-sans"
-          >
-            {Object.entries(SUPPORTED_LANGUAGES)
-              .filter(([code]) => code !== 'auto')
-              .map(([code, name]) => (
-                <option key={code} value={code}>
-                  {name}
-                </option>
-              ))}
-          </select>
-        </div>
-      </div>
+        <details className="group mt-5">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink">
+            <ChevronDown className="h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
+            Speed &amp; rate limits
+          </summary>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-        {/* Max Characters Chunk */}
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-mono uppercase tracking-wider text-slate-400">Chunk Size Limit</label>
-            <span className="text-xs font-mono text-emerald-500">{chunkSize} chars</span>
+          <div className="mt-4 space-y-5">
+            <Slider
+              label="Batch size"
+              hint="Larger batches finish faster; smaller ones survive picky engines."
+              value={chunkSize}
+              min={1000}
+              max={4500}
+              step={100}
+              disabled={disabled}
+              display={`${chunkSize.toLocaleString()} chars`}
+              onChange={onChangeChunkSize}
+            />
+            <Slider
+              label="Pause between batches"
+              hint="More pause avoids rate limits on large files."
+              value={delay}
+              min={0.2}
+              max={5}
+              step={0.1}
+              disabled={disabled}
+              display={`${delay.toFixed(1)}s`}
+              onChange={onChangeDelay}
+            />
           </div>
-          <input
-            type="range"
-            min="1000"
-            max="4500"
-            step="100"
-            value={chunkSize}
-            onChange={(e) => onChangeChunkSize(parseInt(e.target.value, 10))}
-            disabled={disabled}
-            className="accent-emerald-500 bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer disabled:opacity-50"
-          />
-          <p className="text-[10px] text-slate-500 font-mono">Higher bundles text, lower avoids engine splits</p>
-        </div>
-
-        {/* Delay Between Chunks */}
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-mono uppercase tracking-wider text-slate-400">API Intermission Delay</label>
-            <span className="text-xs font-mono text-emerald-500">{delay.toFixed(1)}s</span>
-          </div>
-          <input
-            type="range"
-            min="0.2"
-            max="5.0"
-            step="0.1"
-            value={delay}
-            onChange={(e) => onChangeDelay(parseFloat(e.target.value))}
-            disabled={disabled}
-            className="accent-emerald-500 bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer disabled:opacity-50"
-          />
-          <p className="text-[10px] text-slate-500 font-mono">Controls throttle limit to bypass block rate limits</p>
-        </div>
+        </details>
       </div>
-    </div>
+    </section>
   );
 };
+
+const Slider: React.FC<{
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  display: string;
+  disabled: boolean;
+  onChange: (v: number) => void;
+}> = ({ label, hint, value, min, max, step, display, disabled, onChange }) => (
+  <div>
+    <div className="mb-1.5 flex items-baseline justify-between">
+      <label className="text-sm font-medium text-ink">{label}</label>
+      <span className="font-mono text-xs tabular-nums text-muted">{display}</span>
+    </div>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(parseFloat(e.target.value))}
+      className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-2 accent-accent disabled:opacity-50"
+    />
+    <p className="mt-1.5 text-xs text-faint">{hint}</p>
+  </div>
+);

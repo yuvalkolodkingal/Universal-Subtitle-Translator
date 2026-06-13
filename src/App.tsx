@@ -6,30 +6,25 @@ import { ProgressTracker } from './components/ProgressTracker';
 import { Downloader } from './components/Downloader';
 import { SubtitleGrid } from './components/SubtitleGrid';
 import { SubtitleBlock, parseSRT } from './utils/srtParser';
-import { translateBatch } from './utils/translator';
-import { FileCode, Trash2 } from 'lucide-react';
+import { translateBatch, SUPPORTED_LANGUAGES } from './utils/translator';
+import { FileText, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<SubtitleBlock[]>([]);
   const [translatedBlocks, setTranslatedBlocks] = useState<{ [key: number]: string[] }>({});
-  
-  // Translation settings
+
   const [sourceLang, setSourceLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('es');
   const [chunkSize, setChunkSize] = useState(3500);
   const [delay, setDelay] = useState(1.0);
-  
-  // Console state
+
   const [isTranslating, setIsTranslating] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  
-  // Use ref to hold translating loop alive correctly during settings change
-  const abortControllerRef = useRef<boolean>(false);
+  const abortRef = useRef(false);
 
-  const addLog = (msg: string) => {
-    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-  };
+  const addLog = (msg: string) =>
+    setLogs((prev) => [...prev, `${new Date().toLocaleTimeString([], { hour12: false })}  ${msg}`]);
 
   const handleFileLoaded = (name: string, content: string) => {
     const parsed = parseSRT(content);
@@ -37,11 +32,11 @@ export const App: React.FC = () => {
     setBlocks(parsed);
     setTranslatedBlocks({});
     setLogs([]);
-    addLog(`Successfully parsed "${name}" containing ${parsed.length} blocks.`);
+    addLog(`Loaded ${name} — ${parsed.length} subtitle blocks.`);
   };
 
   const handleReset = () => {
-    abortControllerRef.current = true;
+    abortRef.current = true;
     setIsTranslating(false);
     setFileName(null);
     setBlocks([]);
@@ -49,187 +44,161 @@ export const App: React.FC = () => {
     setLogs([]);
   };
 
-  // Build sequential non-blocking recursive loop to respect pauses cleanly
+  const handleSwap = () => {
+    if (sourceLang === 'auto') return;
+    setSourceLang(targetLang);
+    setTargetLang(sourceLang);
+  };
+
   const startTranslation = async () => {
     if (blocks.length === 0) return;
     setIsTranslating(true);
-    abortControllerRef.current = false;
-    addLog(`Initiating translation pipeline to language '${targetLang}'...`);
+    abortRef.current = false;
 
-    // Collect pending translation queue blocks
+    const targetName = SUPPORTED_LANGUAGES[targetLang] || targetLang;
+    addLog(`Translating to ${targetName}…`);
+
     const pending: { index: number; text: string }[] = [];
     for (const block of blocks) {
       if (!translatedBlocks[block.index]) {
-        pending.push({
-          index: block.index,
-          text: block.textLines.join('\n')
-        });
+        pending.push({ index: block.index, text: block.textLines.join('\n') });
       }
     }
 
     if (pending.length === 0) {
-      addLog('All segments already completed.');
+      addLog('Everything is already translated.');
       setIsTranslating(false);
       return;
     }
 
-    // High-performance chunker sequence
+    // Bundle blocks into character-bounded batches to minimise API calls.
     const chunks: { index: number; text: string }[][] = [];
-    let currentChunk: { index: number; text: string }[] = [];
-    let currentLen = 0;
-
+    let current: { index: number; text: string }[] = [];
+    let len = 0;
     for (const item of pending) {
-      const addedLen = item.text.length + 9; // ACCOUNT DELIMITER OVERHEAD
-      if (currentChunk.length > 0 && currentLen + addedLen > chunkSize) {
-        chunks.push(currentChunk);
-        currentChunk = [item];
-        currentLen = item.text.length;
+      const added = item.text.length + 9; // delimiter overhead
+      if (current.length > 0 && len + added > chunkSize) {
+        chunks.push(current);
+        current = [item];
+        len = item.text.length;
       } else {
-        currentChunk.push(item);
-        currentLen += addedLen;
+        current.push(item);
+        len += added;
       }
     }
-    if (currentChunk.length > 0) chunks.push(currentChunk);
+    if (current.length > 0) chunks.push(current);
 
-    addLog(`Subdividing task load into ${chunks.length} high-speed translation bundles.`);
+    addLog(`Split into ${chunks.length} ${chunks.length === 1 ? 'batch' : 'batches'}.`);
 
     for (let i = 0; i < chunks.length; i++) {
-      if (abortControllerRef.current) {
-        addLog('Translation batch execution suspended by worker request.');
+      if (abortRef.current) {
+        addLog('Paused.');
         setIsTranslating(false);
         return;
       }
-
       const chunk = chunks[i];
-      const startIdx = chunk[0].index;
-      const endIdx = chunk[chunk.length - 1].index;
-
-      addLog(`Requesting bundle batch ${i + 1}/${chunks.length} [Segments ${startIdx}-${endIdx}]...`);
+      addLog(`Batch ${i + 1} of ${chunks.length} — blocks ${chunk[0].index}–${chunk[chunk.length - 1].index}.`);
 
       try {
-        await translateBatch(
-          chunk,
-          sourceLang,
-          targetLang,
-          delay,
-          (idx, translatedLines) => {
-            setTranslatedBlocks((prev) => ({
-              ...prev,
-              [idx]: translatedLines
-            }));
-          }
+        await translateBatch(chunk, sourceLang, targetLang, delay, (idx, lines) =>
+          setTranslatedBlocks((prev) => ({ ...prev, [idx]: lines })),
         );
-      } catch (e: any) {
-        addLog(`ERROR: Batch batch failed at segment block range: ${e.message || e}`);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        addLog(`Couldn’t reach the translation service (${msg}). Press Resume to retry.`);
         setIsTranslating(false);
         return;
       }
 
-      // Safe sleep timer sequence to prevent hitting endpoints block
-      if (i < chunks.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delay * 1000));
-      }
+      if (i < chunks.length - 1) await new Promise((r) => setTimeout(r, delay * 1000));
     }
 
-    addLog('Translation pipeline completed successfully.');
+    addLog('Done.');
     setIsTranslating(false);
   };
 
   const handlePause = () => {
-    abortControllerRef.current = true;
+    abortRef.current = true;
     setIsTranslating(false);
-    addLog('Signal pause received. Suspending operations safely...');
   };
 
-  const handleUpdateBlock = (index: number, lines: string[]) => {
-    setTranslatedBlocks((prev) => ({
-      ...prev,
-      [index]: lines
-    }));
-    addLog(`Manually edited segment index #${index}`);
-  };
+  const handleUpdateBlock = (index: number, lines: string[]) =>
+    setTranslatedBlocks((prev) => ({ ...prev, [index]: lines }));
 
-  const completedCount = blocks.filter(b => !!translatedBlocks[b.index]).length;
+  const completed = blocks.filter((b) => translatedBlocks[b.index]).length;
+  const targetLabel = SUPPORTED_LANGUAGES[targetLang] || targetLang;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-bg">
       <Header />
-      
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 sm:py-14">
         {!fileName ? (
-          <div className="max-w-2xl mx-auto w-full py-12 flex flex-col gap-6">
-            <div className="text-center flex flex-col gap-2">
-              <h2 className="text-4xl font-mono uppercase tracking-tight font-extrabold text-slate-100">
-                UNIVERSAL SUBTITLE TRANSLATOR
-              </h2>
-              <p className="text-sm text-slate-500 font-mono">
-                Translate SRT subtitles between any language pair with optimal throttle management.
-              </p>
+          <div className="mx-auto flex max-w-xl flex-col items-center py-10 text-center sm:py-16">
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-ink sm:text-[2.5rem] sm:leading-[1.1]">
+              Translate subtitles into any language
+            </h1>
+            <p className="mt-4 max-w-md text-pretty text-base leading-relaxed text-muted">
+              Drop in an <span className="font-medium text-ink">.srt</span> file, choose a language, and get a
+              clean, timed translation back. It all runs in your browser — nothing is uploaded.
+            </p>
+            <div className="mt-9 w-full">
+              <DropZone onFileLoaded={handleFileLoaded} />
             </div>
-            <DropZone onFileLoaded={handleFileLoaded} />
           </div>
         ) : (
-          <div className="flex flex-col gap-8">
-            {/* Active File Banner */}
-            <div className="bg-slate-900/50 border border-slate-900 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-500">
-                  <FileCode className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-slate-200 font-mono text-sm font-bold truncate max-w-xs sm:max-w-lg uppercase">
+          <div className="flex flex-col gap-6">
+            {/* File bar */}
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-panel">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
+                  <FileText className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink" title={fileName}>
                     {fileName}
-                  </h2>
-                  <p className="text-xs text-slate-500 font-mono">
-                    Total Subtitles parsed: {blocks.length} sections
+                  </p>
+                  <p className="text-xs text-muted">
+                    {blocks.length} blocks · {completed} translated
                   </p>
                 </div>
               </div>
-
               <button
                 onClick={handleReset}
-                className="text-slate-500 hover:text-rose-500 p-2 rounded hover:bg-slate-950 border border-transparent hover:border-slate-800 transition-all flex items-center gap-2 text-xs font-mono uppercase"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-muted transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
               >
-                <Trash2 className="w-4 h-4" /> Clear File
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline">Close</span>
               </button>
             </div>
 
-            {/* Config & Progress Split grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-6 flex flex-col gap-8">
-                <SettingsPanel
-                  sourceLang={sourceLang}
-                  targetLang={targetLang}
-                  chunkSize={chunkSize}
-                  delay={delay}
-                  onChangeSource={setSourceLang}
-                  onChangeTarget={setTargetLang}
-                  onChangeChunkSize={setChunkSize}
-                  onChangeDelay={setDelay}
-                  disabled={isTranslating}
-                />
-              </div>
-              <div className="lg:col-span-6 flex flex-col gap-8">
-                <ProgressTracker
-                  total={blocks.length}
-                  current={completedCount}
-                  logs={logs}
-                  isTranslating={isTranslating}
-                  onStart={startTranslation}
-                  onPause={handlePause}
-                  onCancel={handleReset}
-                />
-              </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <SettingsPanel
+                sourceLang={sourceLang}
+                targetLang={targetLang}
+                chunkSize={chunkSize}
+                delay={delay}
+                onChangeSource={setSourceLang}
+                onChangeTarget={setTargetLang}
+                onChangeChunkSize={setChunkSize}
+                onChangeDelay={setDelay}
+                onSwap={handleSwap}
+                disabled={isTranslating}
+              />
+              <ProgressTracker
+                total={blocks.length}
+                current={completed}
+                logs={logs}
+                isTranslating={isTranslating}
+                targetLabel={targetLabel}
+                onStart={startTranslation}
+                onPause={handlePause}
+                onCancel={handleReset}
+              />
             </div>
 
-            {/* Downloader Widget */}
-            <Downloader
-              fileName={fileName}
-              originalBlocks={blocks}
-              translatedBlocks={translatedBlocks}
-            />
+            <Downloader fileName={fileName} originalBlocks={blocks} translatedBlocks={translatedBlocks} />
 
-            {/* Dynamic Grid Reviews */}
             <SubtitleGrid
               originalBlocks={blocks}
               translatedBlocks={translatedBlocks}
@@ -238,6 +207,13 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 text-xs text-faint sm:px-8">
+          <span>Runs entirely in your browser.</span>
+          <span>SubRip .srt</span>
+        </div>
+      </footer>
     </div>
   );
 };
