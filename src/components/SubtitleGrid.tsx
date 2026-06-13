@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SubtitleBlock } from '../utils/srtParser';
-import { Search, Pencil, Check, X } from 'lucide-react';
+import { Search, Pencil, Check, X, AlignLeft, AlignRight } from 'lucide-react';
+import { isRTL } from '../utils/rtl';
 
 interface SubtitleGridProps {
   originalBlocks: SubtitleBlock[];
@@ -16,6 +17,7 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
   const [query, setQuery] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editLines, setEditLines] = useState<string[]>([]);
+  const [forceDirection, setForceDirection] = useState<'auto' | 'ltr' | 'rtl'>('auto');
 
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -43,15 +45,55 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
           <h2 className="text-[15px] font-semibold text-ink">Subtitles</h2>
           <p className="mt-0.5 text-sm text-muted">Review line by line. Click any translation to edit it.</p>
         </div>
-        <div className="relative sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-          <input
-            type="search"
-            placeholder="Search subtitles"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-2 py-2 pl-9 pr-3 text-sm text-ink placeholder:text-faint transition-colors duration-150 focus:border-accent focus:bg-surface focus:outline-none"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Direction Override Selector */}
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-2 p-0.5" role="group" aria-label="Text direction override">
+            <button
+              onClick={() => setForceDirection('auto')}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                forceDirection === 'auto'
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              Auto
+            </button>
+            <button
+              onClick={() => setForceDirection('ltr')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                forceDirection === 'ltr'
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-muted hover:text-ink'
+              }`}
+              title="Force Left-to-Right"
+            >
+              <AlignLeft className="h-3 w-3" />
+              LTR
+            </button>
+            <button
+              onClick={() => setForceDirection('rtl')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                forceDirection === 'rtl'
+                  ? 'bg-surface text-ink shadow-sm'
+                  : 'text-muted hover:text-ink'
+              }`}
+              title="Force Right-to-Left"
+            >
+              <AlignRight className="h-3 w-3" />
+              RTL
+            </button>
+          </div>
+
+          <div className="relative sm:w-48">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+            <input
+              type="search"
+              placeholder="Search subtitles"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface-2 py-1.5 pl-9 pr-3 text-sm text-ink placeholder:text-faint transition-colors duration-150 focus:border-accent focus:bg-surface focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
@@ -67,6 +109,16 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
           const translated = translatedBlocks[block.index];
           const isEditing = editingIndex === block.index;
 
+          // Compute alignment/direction classes for Original
+          const origText = block.textLines.join('\n');
+          const isOrigRtl = forceDirection === 'rtl' || (forceDirection === 'auto' && isRTL(origText));
+          const origDirClass = isOrigRtl ? 'rtl text-right' : 'ltr text-left';
+
+          // Compute alignment/direction classes for Translation
+          const transText = translated ? translated.join('\n') : '';
+          const isTransRtl = forceDirection === 'rtl' || (forceDirection === 'auto' && isRTL(transText));
+          const transDirClass = isTransRtl ? 'rtl text-right' : 'ltr text-left';
+
           return (
             <div
               key={block.index}
@@ -81,7 +133,10 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
               </div>
 
               {/* Original */}
-              <div className="text-muted [overflow-wrap:anywhere]">
+              <div 
+                className={`text-muted [overflow-wrap:anywhere] ${origDirClass}`}
+                dir={isOrigRtl ? 'rtl' : 'ltr'}
+              >
                 {block.textLines.map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
@@ -96,6 +151,7 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
                         key={i}
                         autoFocus={i === 0}
                         value={line}
+                        dir={isTransRtl ? 'rtl' : 'ltr'}
                         onChange={(e) => {
                           const next = [...editLines];
                           next[i] = e.target.value;
@@ -105,7 +161,9 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
                           if (e.key === 'Enter') saveEdit(block.index);
                           if (e.key === 'Escape') setEditingIndex(null);
                         }}
-                        className="w-full rounded-md border border-accent bg-surface px-2.5 py-1.5 text-sm text-ink focus:outline-none"
+                        className={`w-full rounded-md border border-accent bg-surface px-2.5 py-1.5 text-sm text-ink focus:outline-none ${
+                          isTransRtl ? 'text-right' : 'text-left'
+                        }`}
                       />
                     ))}
                     <div className="flex justify-end gap-1.5">
@@ -126,9 +184,10 @@ export const SubtitleGrid: React.FC<SubtitleGridProps> = ({
                 ) : translated ? (
                   <button
                     onClick={() => startEdit(block)}
-                    className="group flex w-full items-start justify-between gap-2 rounded-md text-left text-ink"
+                    className={`group flex w-full items-start justify-between gap-2 rounded-md text-ink ${transDirClass}`}
+                    dir={isTransRtl ? 'rtl' : 'ltr'}
                   >
-                    <span>
+                    <span className="w-full">
                       {translated.map((line, i) => (
                         <span key={i} className="block">
                           {line}
