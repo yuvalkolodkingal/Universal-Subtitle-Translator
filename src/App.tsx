@@ -100,8 +100,13 @@ export const App: React.FC = () => {
       addLog(`Batch ${i + 1} of ${chunks.length} — blocks ${chunk[0].index}–${chunk[chunk.length - 1].index}.`);
 
       try {
-        await translateBatch(chunk, sourceLang, targetLang, delay, (idx, lines) =>
-          setTranslatedBlocks((prev) => ({ ...prev, [idx]: lines })),
+        await translateBatch(
+          chunk,
+          sourceLang,
+          targetLang,
+          delay,
+          (idx, lines) => setTranslatedBlocks((prev) => ({ ...prev, [idx]: lines })),
+          () => abortRef.current
         );
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);

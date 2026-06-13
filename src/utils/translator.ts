@@ -183,13 +183,17 @@ export async function translateBatch(
   source: string,
   target: string,
   delay: number,
-  onProgress: (index: number, translated: string[]) => void
+  onProgress: (index: number, translated: string[]) => void,
+  isAborted: () => boolean
 ): Promise<void> {
   if (texts.length === 0) return;
   
+  if (isAborted()) return;
+
   if (texts.length === 1) {
     const item = texts[0];
     const res = await translateText(item.text, source, target, delay);
+    if (isAborted()) return;
     onProgress(item.index, res.split('\n'));
     return;
   }
@@ -198,42 +202,48 @@ export async function translateBatch(
   const combined = texts.map(t => t.text).join(DELIMITER);
   try {
     const res = await translateText(combined, source, target, delay);
+    if (isAborted()) return;
     
     // Improved robust delimiter matching
-    // Some translation engines replace " [###] " with " [ ### ] " or eat whitespace
     const splitRegex = /\s*\[\s*###\s*\]\s*/gi;
     const parts = res.split(splitRegex).map(p => p.trim());
     
     if (parts.length === texts.length) {
       for (let i = 0; i < texts.length; i++) {
+        if (isAborted()) return;
         onProgress(texts[i].index, parts[i].split('\n'));
       }
     } else {
       // Delimiter alignment failure fallback to block-by-block
       console.warn(`Delimiter mismatch: expected ${texts.length} parts, got ${parts.length}. Falling back to block-by-block.`);
       for (const item of texts) {
+        if (isAborted()) return;
         try {
           const fallbackRes = await translateText(item.text, source, target, delay);
+          if (isAborted()) return;
           onProgress(item.index, fallbackRes.split('\n'));
           // Wait slightly to respect rate limits
           if (texts.indexOf(item) < texts.length - 1) {
             await new Promise(resolve => setTimeout(resolve, delay * 1000));
           }
         } catch {
-          // Keep original text as absolute fallback instead of losing it
+          if (isAborted()) return;
           onProgress(item.index, item.text.split('\n'));
         }
       }
     }
   } catch (err) {
+    if (isAborted()) return;
     // Robust batch failure fallback to block-by-block
     for (const item of texts) {
+      if (isAborted()) return;
       try {
         const fallbackRes = await translateText(item.text, source, target, delay);
+        if (isAborted()) return;
         onProgress(item.index, fallbackRes.split('\n'));
         await new Promise(resolve => setTimeout(resolve, delay * 1000));
       } catch {
-        // Safe fall-through on unresolvable translation block
+        if (isAborted()) return;
         onProgress(item.index, item.text.split('\n'));
       }
     }
