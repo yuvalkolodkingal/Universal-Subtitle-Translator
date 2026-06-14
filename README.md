@@ -1,6 +1,6 @@
 # Universal Subtitle Translator
 
-An interactive, production-grade React web application that translates `.srt` subtitle files in-browser between **any language pair** — English to Spanish, Japanese to French, Arabic to Hebrew, and everything in between.
+An interactive, production-grade React web application that translates `.srt` subtitle files in-browser between **any language pair** — English to Spanish, Japanese to French, Arabic to Hebrew, and more.
 
 ## Live Demo & Web App
 
@@ -16,11 +16,19 @@ You can run this application entirely in your browser. Fully static, client-side
 
 ---
 
+## Repository Mirror
+
+This repository is mirrored on Codeberg:
+
+🪞 **[Mirror on Codeberg](https://codeberg.org/YuvalKolodkin/Universal-Subtitle-Translator)**
+
+---
+
 ## How It Works
 
 Standard `.srt` files can have thousands of subtitle blocks. Translating them individually would be extremely slow and trigger rate limits almost immediately.
 
-The React engine bundles multiple blocks into a single translation request using a `[###]` delimiter, then splits the response back into individual blocks. This reduces API calls by ~98% — a 1,500-block file goes from ~1,500 requests to ~30.
+The React engine bundles multiple blocks into a single translation request using a `[###]` delimiter, then splits the response back into individual blocks. This reduces API calls by ~98% — a 1,500-line subtitle file typically completes in under 90 seconds on free-tier translation services.
 
 If the translation engine alters the delimiter and the response can't be cleanly split, the system automatically falls back to translating that batch block-by-block so nothing is lost.
 
