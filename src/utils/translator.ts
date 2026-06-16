@@ -135,7 +135,9 @@ export const SUPPORTED_LANGUAGES: { [key: string]: string } = {
   "zu": "Zulu"
 };
 
-const DELIMITER = " [###] ";
+// A structurally resilient and immutable-like delimiter for machine translation engines.
+// Alphanumeric code token pattern that is highly resistant to being removed, merged or translated.
+const DELIMITER = " [xyz999] ";
 
 /**
  * Single translation with retry + back-off
@@ -204,8 +206,8 @@ export async function translateBatch(
     const res = await translateText(combined, source, target, delay);
     if (isAborted()) return;
     
-    // Improved robust delimiter matching
-    const splitRegex = /\s*\[\s*###\s*\]\s*/gi;
+    // Improved robust delimiter matching that tolerates spaces, casing shifts, brackets
+    const splitRegex = /\s*\[\s*xyz999\s*\]\s*/gi;
     const parts = res.split(splitRegex).map(p => p.trim());
     
     if (parts.length === texts.length) {
@@ -214,38 +216,60 @@ export async function translateBatch(
         onProgress(texts[i].index, parts[i].split('\n'));
       }
     } else {
-      // Delimiter alignment failure fallback to block-by-block
-      console.warn(`Delimiter mismatch: expected ${texts.length} parts, got ${parts.length}. Falling back to block-by-block.`);
-      for (const item of texts) {
-        if (isAborted()) return;
-        try {
-          const fallbackRes = await translateText(item.text, source, target, delay);
-          if (isAborted()) return;
-          onProgress(item.index, fallbackRes.split('\n'));
-          // Wait slightly to respect rate limits
-          if (texts.indexOf(item) < texts.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, delay * 1000));
-          }
-        } catch {
-          if (isAborted()) return;
-          onProgress(item.index, item.text.split('\n'));
-        }
-      }
+      // Delimiter alignment failure fallback to sub-batching / binary split
+      console.warn(`Delimiter mismatch: expected ${texts.length} parts, got ${parts.length}. Falling back to binary sub-batching.`);
+      await translateSubBatches(texts, source, target, delay, onProgress, isAborted);
     }
   } catch (err) {
     if (isAborted()) return;
-    // Robust batch failure fallback to block-by-block
-    for (const item of texts) {
-      if (isAborted()) return;
-      try {
-        const fallbackRes = await translateText(item.text, source, target, delay);
-        if (isAborted()) return;
-        onProgress(item.index, fallbackRes.split('\n'));
-        await new Promise(resolve => setTimeout(resolve, delay * 1000));
-      } catch {
-        if (isAborted()) return;
-        onProgress(item.index, item.text.split('\n'));
-      }
-    }
+    // Batch failure fallback to sub-batching / binary split
+    console.warn(`Batch failed, falling back to binary sub-batching:`, err);
+    await translateSubBatches(texts, source, target, delay, onProgress, isAborted);
   }
+}
+
+/**
+ * Fallback mechanism: Sub-batching using binary splitting.
+ * If a batch fails or is mismatched, split it into two smaller halves.
+ * If we reach 1 text, we translate it block-by-block.
+ */
+async function translateSubBatches(
+  texts: { index: number; text: string }[],
+  source: string,
+  target: string,
+  delay: number,
+  onProgress: (index: number, translated: string[]) => void,
+  isAborted: () => boolean
+): Promise<void> {
+  if (texts.length === 0) return;
+  if (isAborted()) return;
+
+  if (texts.length === 1) {
+    const item = texts[0];
+    try {
+      const res = await translateText(item.text, source, target, delay);
+      if (isAborted()) return;
+      onProgress(item.index, res.split('\n'));
+    } catch {
+      if (isAborted()) return;
+      onProgress(item.index, item.text.split('\n'));
+    }
+    return;
+  }
+
+  // Binary split
+  const mid = Math.ceil(texts.length / 2);
+  const left = texts.slice(0, mid);
+  const right = texts.slice(mid);
+
+  // Translate left half
+  await translateBatch(left, source, target, delay, onProgress, isAborted);
+  
+  // Wait delay margin between sub-batches to respect rate-limiting
+  if (!isAborted()) {
+    await new Promise(resolve => setTimeout(resolve, delay * 1000));
+  }
+
+  // Translate right half
+  await translateBatch(right, source, target, delay, onProgress, isAborted);
 }
