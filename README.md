@@ -28,20 +28,19 @@ This repository is mirrored on Codeberg:
 
 ## Architecture
 
-Interactive architecture diagrams live in [FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io):
-
-| Diagram | Link |
-|---------|------|
-| Tech stack | [Open in FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io) |
-| Code structure | [Open in FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io) |
+Architecture diagrams live in [FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io).
 
 ### Tech stack
 
 Client-side SPA: React and TypeScript bundled with Vite, styled with Tailwind and OKLCH tokens. Translation runs in the browser via batched calls to Google Translate; GitHub Actions builds and deploys to GitHub Pages.
 
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/board/p54QZWMzHNwEklhvR3m2Io/Universal-Subtitle-Translator-%E2%80%94-Tech-Stack?node-id=0-1&embed-host=share" allowfullscreen></iframe>
+
 ### Code structure
 
 `App.tsx` orchestrates UI components, translation state, and the worker pool. Utilities handle SRT parsing, batch translation, and RTL text detection.
+
+[Open code structure diagram in FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io)
 
 ---
 
