@@ -1,8 +1,26 @@
 # Wiki source
 
-Markdown pages in this folder are the project wiki. They are browsable on GitHub at [`docs/wiki/`](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/tree/main/docs/wiki).
+Markdown pages in this folder are the **source of truth** for the [GitHub Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki).
 
-To publish them to the [GitHub Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki), enable **Wikis** under repository **Settings → Features**, then run:
+## Automatic sync
+
+The [Sync Wiki](../../.github/workflows/sync-wiki.yml) workflow publishes this folder to the GitHub Wiki on every push to `main` that touches `docs/wiki/**`.
+
+| Setting | Value |
+|---------|-------|
+| Action | [Andrew-Chen-Wang/github-wiki-action@v5](https://github.com/Andrew-Chen-Wang/github-wiki-action) |
+| Source path | `docs/wiki/` |
+| Strategy | `init` (deploy-style mirror) |
+| Ignored | `README.md` (this file) |
+
+### One-time setup
+
+1. Enable **Wikis** under repository **Settings → Features**
+2. Merge a change under `docs/wiki/` to `main`, or run **Actions → Sync Wiki → Run workflow**
+
+Contributors edit wiki pages here and open pull requests — the workflow keeps the GitHub Wiki in sync after merge.
+
+## Pages
 
 | File | Wiki page |
 |------|-----------|
@@ -16,19 +34,4 @@ To publish them to the [GitHub Wiki](https://github.com/yuvalkolodkingal/Univers
 | `_Sidebar.md` | Sidebar navigation |
 | `_Footer.md` | Footer |
 
-## Sync to GitHub Wiki
-
-Enable Wikis in the repository **Settings → Features**, then:
-
-```bash
-git clone https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator.wiki.git
-cp docs/wiki/*.md Universal-Subtitle-Translator.wiki/
-cd Universal-Subtitle-Translator.wiki
-git add -A
-git commit -m "Sync wiki from docs/wiki"
-git push
-```
-
-Until the wiki is enabled, start at [Home.md](Home.md) in this folder.
-
-## Pages
+Start reading at [Home.md](Home.md).

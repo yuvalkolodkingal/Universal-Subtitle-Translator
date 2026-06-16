@@ -10,6 +10,12 @@ Push to `main` triggers `.github/workflows/deploy.yml`:
 2. **Install and build:** `npm ci` then `npm run build`
 3. **Deploy:** push `dist/` to the `gh-pages` branch via `JamesIves/github-pages-deploy-action@v4`
 
+## Wiki sync
+
+Documentation in `docs/wiki/` is published to the [GitHub Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki) by `.github/workflows/sync-wiki.yml` using [github-wiki-action](https://github.com/Andrew-Chen-Wang/github-wiki-action). The workflow runs on pushes to `main` that change `docs/wiki/**`.
+
+**Prerequisite:** enable **Wikis** under repository **Settings → Features**.
+
 ## Live URL
 
 **https://yuvalkolodkingal.github.io/Universal-Subtitle-Translator/**

@@ -1,0 +1,36 @@
+name: Sync Wiki
+
+# Mirrors docs/wiki/ (source of truth) to the GitHub Wiki on every merge to main.
+# Requires Wikis enabled under Settings → Features.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/wiki/**'
+      - '.github/workflows/sync-wiki.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-wiki
+  cancel-in-progress: true
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish docs/wiki to GitHub Wiki
+        uses: Andrew-Chen-Wang/github-wiki-action@v5
+        with:
+          path: docs/wiki
+          strategy: init
+          preprocess: false
+          ignore: |
+            README.md
+          commit-message: 'docs: sync wiki from docs/wiki @ ${{ github.sha }}'
+          disable-empty-commits: true
