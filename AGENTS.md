@@ -1,13 +1,56 @@
 # Agent Guidelines
 
+## Project
+
+| Field | Value |
+|-------|-------|
+| Stack | TypeScript 5.2, React 18, Vite 5, Tailwind CSS 3 |
+| Type | Client-side SPA — in-browser `.srt` subtitle translator |
+| Entry | `src/main.tsx` → `src/App.tsx` |
+| Deploy target | GitHub Pages at `/Universal-Subtitle-Translator/` |
+
 ## Commands
 
-- **Build / Verification:** `npm run build`
-  - Runs `tsc && vite build`. Ensure zero TypeScript compiler errors before committing.
-- **Local Dev Server:** `npm run dev`
-- **Vite Preview (Local Production Server):** `npm run preview -- --port 4173`
+| Command | Purpose |
+|---------|---------|
+| `npm install` | Install dependencies |
+| `npm run dev` | Local dev server (`http://localhost:5173`) |
+| `npm run build` | Type-check (`tsc`) + production bundle (`vite build`) — **required before commit** |
+| `npm run preview -- --port 4173` | Serve production build locally |
 
----
+<!-- GENERATED:START ci -->
+## CI / Quality Gates
+
+| Gate | Detail |
+|------|--------|
+| Trigger | Push to `main` (`.github/workflows/deploy.yml`) |
+| Install | `npm ci` |
+| Build | `npm run build` — must pass with zero TypeScript errors |
+| Deploy | `dist/` → `gh-pages` branch via `JamesIves/github-pages-deploy-action@v4` |
+| Node runtime | `ubuntu-latest` (no pinned Node version in workflow) |
+<!-- GENERATED:END ci -->
+
+<!-- GENERATED:START architecture -->
+## Architecture
+
+| Area | Location | Notes |
+|------|----------|-------|
+| SRT parse/serialize | `src/utils/srtParser.ts` | Handles BOM, CRLF/LF, block indexing |
+| Translation engine | `src/utils/translator.ts` | Google Translate free endpoint; batch delimiter `[xyz999]` |
+| RTL detection | `src/utils/rtl.ts` | Hebrew, Arabic, Persian character ranges |
+| Theme hook | `src/hooks/useTheme.ts` | Persists to `localStorage`; zero-flash init in `index.html` |
+| Design tokens | `src/index.css` | OKLCH CSS variables; mapped in `tailwind.config.cjs` |
+| Base path | `vite.config.ts` | `base: '/Universal-Subtitle-Translator/'` |
+| UI components | `src/components/` | `DropZone`, `SettingsPanel`, `SubtitleGrid`, `ProgressTracker`, `Downloader`, `Header` |
+
+### Translation pipeline
+
+1. Parse `.srt` → subtitle blocks (`parseSRT`)
+2. Bundle pending blocks into character-bounded batches (default chunk size `1500`)
+3. Translate batches via worker pool (default concurrency `2`) using `[xyz999]` delimiter
+4. On delimiter mismatch or batch failure → binary sub-batch fallback in `translateSubBatches`
+5. Serialize translated blocks back to `.srt` for download
+<!-- GENERATED:END architecture -->
 
 ## Architecture & Codebase Quirks
 
