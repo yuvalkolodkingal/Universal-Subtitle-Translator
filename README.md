@@ -8,7 +8,7 @@ You can run this application entirely in your browser. Fully static, client-side
 
 👉 **[Access the Hosted App Live](https://yuvalkolodkingal.github.io/Universal-Subtitle-Translator/)**
 
-📖 **[Project Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki)** — architecture, pipeline, development, and FAQ
+📖 **[Project Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/tree/main/docs/wiki)** — architecture, pipeline, development, and FAQ
 
 ### Web Features
 - **Interactive File Sandbox** — Drag & drop subtitle `.srt` files and preview parses in real-time.

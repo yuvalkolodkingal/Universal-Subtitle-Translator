@@ -1,8 +1,8 @@
 # Wiki source
 
-Markdown pages in this folder mirror the [GitHub Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki).
+Markdown pages in this folder are the project wiki. They are browsable on GitHub at [`docs/wiki/`](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/tree/main/docs/wiki).
 
-## Pages
+To publish them to the [GitHub Wiki](https://github.com/yuvalkolodkingal/Universal-Subtitle-Translator/wiki), enable **Wikis** under repository **Settings → Features**, then run:
 
 | File | Wiki page |
 |------|-----------|
@@ -29,4 +29,6 @@ git commit -m "Sync wiki from docs/wiki"
 git push
 ```
 
-Until the wiki is enabled, these files are browsable directly on GitHub under `docs/wiki/`.
+Until the wiki is enabled, start at [Home.md](Home.md) in this folder.
+
+## Pages
