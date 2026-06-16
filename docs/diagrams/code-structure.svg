@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 820" role="img" aria-labelledby="codeTitle codeDesc">
+  <title id="codeTitle">Universal Subtitle Translator Code Structure</title>
+  <desc id="codeDesc">Module dependency graph for entry points, App orchestrator, components, hooks, utilities, and build configuration.</desc>
+  <defs>
+    <linearGradient id="bgGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fafafa"/>
+      <stop offset="100%" stop-color="#f4f4f5"/>
+    </linearGradient>
+    <filter id="shadow2" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#18181b" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowSolid" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#71717a"/>
+    </marker>
+    <marker id="arrowDashed" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#a1a1aa"/>
+    </marker>
+    <style>
+      .title { font: 700 24px Inter, ui-sans-serif, system-ui, sans-serif; fill: #18181b; }
+      .subtitle { font: 400 14px Inter, ui-sans-serif, system-ui, sans-serif; fill: #71717a; }
+      .layerTitle { font: 600 13px Inter, ui-sans-serif, system-ui, sans-serif; fill: #27272a; }
+      .node { font: 500 12px Inter, ui-sans-serif, system-ui, sans-serif; fill: #27272a; }
+      .nodePath { font: 400 11px Inter, ui-sans-serif, system-ui, sans-serif; fill: #52525b; }
+      .legendLabel { font: 500 12px Inter, ui-sans-serif, system-ui, sans-serif; fill: #3f3f46; }
+    </style>
+  </defs>
+
+  <rect width="960" height="820" rx="16" fill="url(#bgGrad2)"/>
+
+  <text x="40" y="44" class="title">Code structure</text>
+  <text x="40" y="68" class="subtitle">Source modules and import relationships in src/</text>
+
+  <!-- Entry Point -->
+  <g filter="url(#shadow2)">
+    <rect x="60" y="92" width="840" height="88" rx="14" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="84" y="120" class="layerTitle">Entry point</text>
+    <rect x="84" y="132" width="120" height="34" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="98" y="154" class="node">index.html</text>
+    <rect x="220" y="132" width="110" height="34" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="234" y="154" class="node">main.tsx</text>
+    <rect x="346" y="132" width="170" height="34" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="360" y="154" class="node">index.css</text>
+  </g>
+
+  <line x1="204" y1="149" x2="220" y2="149" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+  <line x1="330" y1="149" x2="346" y2="149" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <line x1="480" y1="180" x2="480" y2="204" stroke="#71717a" stroke-width="2" marker-end="url(#arrowSolid)"/>
+
+  <!-- App Orchestrator -->
+  <g filter="url(#shadow2)">
+    <rect x="330" y="212" width="300" height="64" rx="14" fill="#fef9ee" stroke="#c9932e" stroke-width="2"/>
+    <text x="354" y="240" class="layerTitle">App orchestrator</text>
+    <rect x="354" y="248" width="252" height="34" rx="8" fill="#ffffff" stroke="#e8c872"/>
+    <text x="368" y="270" class="node">App.tsx</text>
+  </g>
+
+  <line x1="480" y1="276" x2="480" y2="300" stroke="#71717a" stroke-width="2" marker-end="url(#arrowSolid)"/>
+
+  <!-- Components -->
+  <g filter="url(#shadow2)">
+    <rect x="60" y="308" width="840" height="120" rx="14" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+    <text x="84" y="336" class="layerTitle">Components</text>
+    <rect x="84" y="350" width="118" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="98" y="372" class="node">Header.tsx</text>
+    <rect x="214" y="350" width="124" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="228" y="372" class="node">DropZone.tsx</text>
+    <rect x="350" y="350" width="148" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="364" y="372" class="node">SettingsPanel.tsx</text>
+    <rect x="510" y="350" width="156" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="524" y="372" class="node">ProgressTracker.tsx</text>
+    <rect x="678" y="350" width="132" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="692" y="372" class="node">Downloader.tsx</text>
+    <rect x="84" y="392" width="136" height="34" rx="8" fill="#ffffff" stroke="#6ee7b7"/>
+    <text x="98" y="414" class="node">SubtitleGrid.tsx</text>
+  </g>
+
+  <!-- Hooks and Utils row -->
+  <g filter="url(#shadow2)">
+    <rect x="60" y="452" width="400" height="88" rx="14" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
+    <text x="84" y="480" class="layerTitle">Hooks</text>
+    <rect x="84" y="492" width="140" height="34" rx="8" fill="#ffffff" stroke="#5eead4"/>
+    <text x="98" y="514" class="node">useTheme.ts</text>
+  </g>
+
+  <g filter="url(#shadow2)">
+    <rect x="500" y="452" width="400" height="88" rx="14" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+    <text x="524" y="480" class="layerTitle">Utils</text>
+    <rect x="524" y="492" width="132" height="34" rx="8" fill="#ffffff" stroke="#fcd34d"/>
+    <text x="538" y="514" class="node">srtParser.ts</text>
+    <rect x="668" y="492" width="132" height="34" rx="8" fill="#ffffff" stroke="#fcd34d"/>
+    <text x="682" y="514" class="node">translator.ts</text>
+    <rect x="812" y="492" width="72" height="34" rx="8" fill="#ffffff" stroke="#fcd34d"/>
+    <text x="826" y="514" class="node">rtl.ts</text>
+  </g>
+
+  <!-- Build Config -->
+  <g filter="url(#shadow2)">
+    <rect x="60" y="564" width="840" height="88" rx="14" fill="#f4f4f5" stroke="#71717a" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="84" y="592" class="layerTitle">Build config</text>
+    <rect x="84" y="604" width="170" height="34" rx="8" fill="#ffffff" stroke="#d4d4d8"/>
+    <text x="98" y="626" class="node">vite.config.ts</text>
+    <rect x="268" y="604" width="180" height="34" rx="8" fill="#ffffff" stroke="#d4d4d8"/>
+    <text x="282" y="626" class="node">tailwind.config.cjs</text>
+    <rect x="464" y="604" width="220" height="34" rx="8" fill="#ffffff" stroke="#d4d4d8"/>
+    <text x="478" y="626" class="node">.github/workflows/deploy.yml</text>
+  </g>
+
+  <!-- Dependency arrows -->
+  <!-- Header -> useTheme -->
+  <path d="M 143 384 C 143 430 154 430 154 476" fill="none" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <!-- SettingsPanel -> translator -->
+  <path d="M 424 384 C 424 430 740 430 740 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <!-- Downloader -> srtParser -->
+  <path d="M 744 384 C 744 430 590 430 590 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <!-- SubtitleGrid -> srtParser and rtl -->
+  <path d="M 152 426 C 152 440 560 440 560 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+  <path d="M 180 426 C 180 444 850 444 850 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <!-- App -> utils -->
+  <path d="M 580 276 C 700 276 700 420 700 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+  <path d="M 520 276 C 620 276 620 420 620 476" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+
+  <!-- Build config dashed -->
+  <path d="M 169 604 C 169 680 265 680 265 180" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowDashed)"/>
+  <path d="M 358 604 C 358 680 431 680 431 166" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowDashed)"/>
+  <path d="M 574 604 C 574 700 880 700 880 680" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="5 4"/>
+
+  <!-- Key relationships box -->
+  <g filter="url(#shadow2)">
+    <rect x="60" y="676" width="840" height="112" rx="14" fill="#ffffff" stroke="#e4e4e7" stroke-width="1.5"/>
+    <text x="84" y="704" class="layerTitle">Key relationships</text>
+    <text x="84" y="728" class="nodePath">App.tsx owns translation state, batches pending blocks, and spawns a worker pool calling translateBatch().</text>
+    <text x="84" y="748" class="nodePath">srtParser.ts handles parseSRT / stringifySRT. translator.ts calls Google Translate with [xyz999] batch delimiters.</text>
+    <text x="84" y="768" class="nodePath">SubtitleGrid.tsx uses isRTL() for bidirectional layout. Header.tsx persists theme via useTheme.ts and index.html zero-flash init.</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(60, 804)">
+    <line x1="0" y1="-6" x2="28" y2="-6" stroke="#71717a" stroke-width="2" marker-end="url(#arrowSolid)"/>
+    <text x="36" y="-2" class="legendLabel">Import</text>
+    <line x1="120" y1="-6" x2="148" y2="-6" stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowDashed)"/>
+    <text x="156" y="-2" class="legendLabel">Build-time</text>
+    <rect x="260" y="-14" width="14" height="14" rx="3" fill="#ecfdf5" stroke="#059669"/>
+    <text x="282" y="-2" class="legendLabel">Components</text>
+    <rect x="390" y="-14" width="14" height="14" rx="3" fill="#fffbeb" stroke="#d97706"/>
+    <text x="412" y="-2" class="legendLabel">Utils</text>
+    <rect x="480" y="-14" width="14" height="14" rx="3" fill="#fef9ee" stroke="#c9932e"/>
+    <text x="502" y="-2" class="legendLabel">Orchestrator</text>
+  </g>
+</svg>
