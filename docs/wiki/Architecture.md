@@ -2,11 +2,18 @@
 
 This page describes the system design: what runs where, and how source files connect.
 
+## Diagrams
+
+Color-coded architecture diagrams live in [FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io):
+
+- **Tech stack** — browser client, frontend stack, application core, external API, CI/CD
+- **Code structure** — module dependencies across `src/`
+
 ## Tech stack
 
 Client-side SPA: React and TypeScript bundled with Vite, styled with Tailwind and OKLCH tokens. Translation runs in the browser via batched calls to Google Translate. GitHub Actions builds and deploys to GitHub Pages.
 
-![Tech stack diagram](https://raw.githubusercontent.com/yuvalkolodkingal/Universal-Subtitle-Translator/main/docs/diagrams/tech-stack.svg)
+[View tech stack diagram in FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io)
 
 ### Layers
 
@@ -22,7 +29,7 @@ Client-side SPA: React and TypeScript bundled with Vite, styled with Tailwind an
 
 `App.tsx` is the orchestrator: it holds translation state, batches pending blocks, and drives the concurrent worker pool.
 
-![Code structure diagram](https://raw.githubusercontent.com/yuvalkolodkingal/Universal-Subtitle-Translator/main/docs/diagrams/code-structure.svg)
+[View code structure diagram in FigJam](https://www.figma.com/board/p54QZWMzHNwEklhvR3m2Io)
 
 ### Module map
 
