@@ -40,8 +40,7 @@ src/
   hooks/                React hooks
   utils/                SRT + translation + RTL
 docs/
-  diagrams/             Architecture SVGs
-  wiki/                 Wiki source (mirrors GitHub Wiki)
+  wiki/                 Wiki source (synced to GitHub Wiki)
 ```
 
 ## Conventions
